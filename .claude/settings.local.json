@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.synthesia.io)",
+      "WebSearch",
+      "WebFetch(domain:www.heygen.com)",
+      "Bash(dir /b \"C:\\dev\\AIアバター\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
