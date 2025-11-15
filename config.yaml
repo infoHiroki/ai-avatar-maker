@@ -25,7 +25,7 @@ cartesia:
   ws_url: "wss://api.cartesia.ai/tts/websocket"
 
   # モデル設定
-  model: "sonic-japanese"
+  model: "sonic-multilingual"
 
   # 音声フォーマット
   output_format:
