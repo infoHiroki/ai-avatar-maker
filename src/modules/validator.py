@@ -11,20 +11,19 @@ from typing import Tuple, Optional
 from ..models.schemas import ScriptValidation, VideoLength
 from ..utils.errors import ValidationError
 from ..utils.logger import get_logger
+from ..utils.config import get_config
 
 logger = get_logger(__name__)
 
 
 def validate_script(
-    script: str,
-    video_length: VideoLength = VideoLength.SHORTS
+    script: str
 ) -> Tuple[Optional[ScriptValidation], Optional[Exception]]:
     """
     スクリプトをバリデーション
 
     Args:
         script: 入力スクリプト
-        video_length: 動画の長さ
 
     Returns:
         (validation_result, error):
@@ -32,55 +31,67 @@ def validate_script(
             - 失敗: (None, Exception)
 
     Example:
-        >>> validation, err = validate_script("今日は〇〇について...", VideoLength.SHORTS)
+        >>> validation, err = validate_script("今日は〇〇について...")
         >>> if err:
         >>>     print(f"エラー: {err}")
         >>> else:
-        >>>     print(f"単語数: {validation.word_count}")
+        >>>     print(f"文字数: {validation.word_count}")
     """
     try:
         # 空チェック
         if not script or not script.strip():
             return (None, ValidationError("スクリプトを入力してください"))
 
-        # 単語数カウント
-        word_count = count_words(script)
+        # 文字数カウント
+        char_count = count_chars(script)
 
-        # 最大単語数取得
-        max_words = get_max_words(video_length)
+        # 最大文字数取得（目安）
+        max_chars = get_max_chars()
 
-        # 文字数チェック
-        if word_count > max_words:
-            return (
-                None,
-                ValidationError(
-                    f"スクリプトが長すぎます（{word_count}単語 / 最大{max_words}単語）"
-                )
+        # 文字数チェック（警告のみ、エラーにはしない）
+        # 実際の制限は音声生成後の duration チェックで行う
+        if char_count > max_chars:
+            logger.warning(
+                f"スクリプトが長い（{char_count}文字 / 推奨{max_chars}文字）"
+                f"※ 実際の時間は音声生成後に確認されます"
             )
 
-        # 最小文字数チェック
-        min_words = 10
-        if word_count < min_words:
+        # 最小文字数取得
+        config = get_config()
+        min_chars = config.get("script.min_chars", 30)
+        if char_count < min_chars:
             return (
                 None,
                 ValidationError(
-                    f"スクリプトが短すぎます（{word_count}単語 / 最低{min_words}単語必要）"
+                    f"スクリプトが短すぎます（{char_count}文字 / 最低{min_chars}文字必要）"
                 )
             )
 
         # 予想音声時間を計算
         estimated_duration = estimate_duration(script)
 
+        # 推定時間チェック（明らかに長すぎる場合はブロック）
+        # 余裕を持って350秒（推定は誤差があるため）
+        max_estimated_duration = config.get("script.max_estimated_duration", 350)
+        if estimated_duration > max_estimated_duration:
+            return (
+                None,
+                ValidationError(
+                    f"スクリプトが長すぎます（推定{estimated_duration}秒 / 最大約{max_estimated_duration}秒）\n"
+                    f"※ スクリプトを短くするか、2つに分けてください"
+                )
+            )
+
         # バリデーション成功
         validation = ScriptValidation(
             is_valid=True,
-            word_count=word_count,
+            word_count=char_count,
             estimated_duration_seconds=estimated_duration,
             error_message=None
         )
 
         logger.info(
-            f"スクリプトバリデーション成功: {word_count}単語、"
+            f"スクリプトバリデーション成功: {char_count}文字、"
             f"予想{estimated_duration}秒"
         )
 
@@ -91,46 +102,44 @@ def validate_script(
         return (None, e)
 
 
-def count_words(text: str) -> int:
+def count_chars(text: str) -> int:
     """
-    単語数をカウント
+    文字数をカウント
 
-    日本語の場合は文字数、英語の場合は単語数
+    空白、改行、タブを除いた文字数を返す
 
     Args:
         text: テキスト
 
     Returns:
-        単語数
+        文字数
 
     Example:
-        >>> count = count_words("今日は良い天気です")
+        >>> count = count_chars("今日は良い天気です")
         >>> print(count)  # 8
     """
-    # 空白で分割
-    words = text.split()
-
-    # 日本語が含まれる場合は文字数で計算
-    # （簡易実装：全角文字が含まれているか）
-    if any(ord(c) > 127 for c in text):
-        # 日本語: 空白と改行を除いた文字数
-        char_count = sum(1 for c in text if c not in [' ', '\n', '\t'])
-        return char_count
-    else:
-        # 英語: 単語数
-        return len(words)
+    # 空白、改行、タブを除いた文字数
+    char_count = sum(1 for c in text if c not in [' ', '\n', '\t'])
+    return char_count
 
 
-def estimate_duration(
-    text: str,
-    words_per_minute: int = 150
-) -> int:
+# 後方互換性のため
+def count_words(text: str) -> int:
+    """
+    後方互換性のため残す（count_charsを呼び出す）
+    """
+    return count_chars(text)
+
+
+def estimate_duration(text: str) -> int:
     """
     予想音声時間を計算（秒）
 
+    日本語の文字数から概算時間を計算
+    ※ あくまで目安。実際の時間はpydubで測定すること
+
     Args:
         text: テキスト
-        words_per_minute: 1分あたりの単語数（デフォルト: 150）
 
     Returns:
         予想時間（秒）
@@ -139,37 +148,29 @@ def estimate_duration(
         >>> duration = estimate_duration("今日は〇〇について解説します...")
         >>> print(f"{duration}秒")
     """
-    word_count = count_words(text)
+    # 設定から文字/分を取得
+    config = get_config()
+    chars_per_minute = config.get("script.chars_per_minute", 300)
 
-    # 日本語の場合は調整（文字数→単語数換算）
-    if any(ord(c) > 127 for c in text):
-        # 日本語: 約2.5文字 = 1単語
-        word_count = word_count / 2.5
-
-    # 分を計算
-    minutes = word_count / words_per_minute
+    # 文字数カウント
+    char_count = count_chars(text)
 
     # 秒に変換
-    seconds = int(minutes * 60)
+    seconds = int((char_count / chars_per_minute) * 60)
 
     return seconds
 
 
-def get_max_words(video_length: VideoLength) -> int:
+def get_max_chars() -> int:
     """
-    動画の長さから最大単語数を取得
-
-    Args:
-        video_length: 動画の長さ
+    最大文字数を取得（目安）
 
     Returns:
-        最大単語数
+        最大文字数
 
     Example:
-        >>> max_words = get_max_words(VideoLength.SHORTS)
-        >>> print(max_words)  # 150
+        >>> max_chars = get_max_chars()
+        >>> print(max_chars)  # 1500
     """
-    if video_length == VideoLength.SHORTS:
-        return 150  # 60秒
-    else:  # VideoLength.LONG
-        return 500  # 5分
+    config = get_config()
+    return config.get("script.max_chars", 1500)

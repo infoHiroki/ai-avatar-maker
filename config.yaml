@@ -8,13 +8,16 @@ app:
 
 # スクリプト設定
 script:
-  # 最大単語数
-  max_words_shorts: 150      # Shorts (60秒)
-  max_words_long: 500        # 5分動画
-  min_words: 10              # 最小単語数
+  # 最大文字数（目安）
+  max_chars: 1500            # 約5分の目安（厳密な制限なし）
+  min_chars: 30              # 最小文字数（約6秒の音声）
 
-  # 予想音声時間計算
-  words_per_minute: 150      # 1分あたりの単語数
+  # 予想音声時間計算（日本語）
+  chars_per_minute: 300      # 1分あたりの文字数（日本語TTS標準速度）
+
+  # D-ID制限
+  max_estimated_duration: 350  # 推定時間の上限（余裕あり、音声生成前チェック）
+  max_duration_seconds: 290    # 実測時間の上限（厳密、音声生成後チェック）
 
 # 音声生成設定 (Cartesia)
 cartesia:

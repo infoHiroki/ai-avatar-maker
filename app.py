@@ -64,9 +64,6 @@ def initialize_session_state():
     if "script" not in st.session_state:
         st.session_state.script = ""
 
-    if "video_length" not in st.session_state:
-        st.session_state.video_length = VideoLength.SHORTS
-
     if "voice_speed" not in st.session_state:
         st.session_state.voice_speed = 1.0
 
@@ -90,46 +87,53 @@ def render_input_screen():
         help="動画のナレーション用スクリプトを入力してください"
     )
 
-    # リアルタイム単語数表示
+    # リアルタイム文字数・時間表示
     if script:
-        word_count = validator.count_words(script)
+        char_count = validator.count_chars(script)
         estimated_duration = validator.estimate_duration(script)
+        max_chars = validator.get_max_chars()
+        max_estimated_duration = config.get("script.max_estimated_duration", 350)
 
         col1, col2 = st.columns(2)
+
         with col1:
-            st.metric("文字数", f"{word_count}文字")
+            # 文字数表示（超過時は赤色）
+            if char_count > max_chars:
+                st.markdown(f"### :red[📝 文字数: {char_count} / {max_chars}]")
+                st.error(f"⚠️ 推奨文字数を{char_count - max_chars}文字超過")
+            else:
+                st.markdown(f"### :green[📝 文字数: {char_count} / {max_chars}]")
+
         with col2:
-            st.metric("予想音声時間", f"{estimated_duration}秒")
+            # 予想時間表示（超過時は赤色）
+            minutes = estimated_duration // 60
+            seconds = estimated_duration % 60
+
+            if estimated_duration > max_estimated_duration:
+                st.markdown(f"### :red[⏱️ 予想時間: {minutes}分{seconds:02d}秒]")
+                st.error(f"⚠️ 推定時間を超過（最大約{max_estimated_duration}秒）")
+            elif estimated_duration > 290:
+                st.markdown(f"### :orange[⏱️ 予想時間: {minutes}分{seconds:02d}秒]")
+                st.warning(f"⚠️ 5分に近いです（実測で確認されます）")
+            else:
+                st.markdown(f"### :green[⏱️ 予想時間: {minutes}分{seconds:02d}秒]")
+                st.success("✅ OK")
 
     st.markdown("---")
 
     # 設定
     st.header("⚙️ 設定")
 
-    col1, col2 = st.columns(2)
+    voice_speed = st.slider(
+        "声の速度",
+        min_value=0.5,
+        max_value=2.0,
+        value=st.session_state.voice_speed,
+        step=0.1,
+        help="1.0が標準速度です"
+    )
 
-    with col1:
-        video_length = st.radio(
-            "動画の長さ",
-            options=[VideoLength.SHORTS, VideoLength.LONG],
-            format_func=lambda x: "60秒 (Shorts)" if x == VideoLength.SHORTS else "5分動画",
-            index=0 if st.session_state.video_length == VideoLength.SHORTS else 1,
-            help="動画の長さを選択してください"
-        )
-
-        # 最大単語数表示
-        max_words = validator.get_max_words(video_length)
-        st.info(f"💡 最大{max_words}文字まで")
-
-    with col2:
-        voice_speed = st.slider(
-            "声の速度",
-            min_value=0.5,
-            max_value=2.0,
-            value=st.session_state.voice_speed,
-            step=0.1,
-            help="1.0が標準速度です"
-        )
+    st.info("💡 動画の長さはスクリプトの文字数で自動的に決まります（最大5分）")
 
     st.markdown("---")
 
@@ -140,7 +144,7 @@ def render_input_screen():
             st.error("⚠️ スクリプトを入力してください")
             return
 
-        validation, err = validator.validate_script(script, video_length)
+        validation, err = validator.validate_script(script)
 
         if err:
             if isinstance(err, ValidationError):
@@ -151,7 +155,6 @@ def render_input_screen():
 
         # セッション状態に保存
         st.session_state.script = script
-        st.session_state.video_length = video_length
         st.session_state.voice_speed = voice_speed
 
         # 状態遷移
@@ -164,7 +167,6 @@ def render_generating_screen():
     st.header("⏳ 動画生成中...")
 
     script = st.session_state.script
-    video_length = st.session_state.video_length
     voice_speed = st.session_state.voice_speed
 
     # APIキー取得
@@ -228,6 +230,29 @@ def render_generating_screen():
 
         # 音声プレビュー
         st.audio(str(audio.audio_url))
+
+        # 音声時間チェック（D-ID制限）
+        max_duration = config.get("script.max_duration_seconds", 290)
+        actual_duration = audio.duration_seconds
+
+        st.info(f"📊 音声時間: {actual_duration:.1f}秒 / 最大{max_duration}秒")
+
+        if actual_duration > max_duration:
+            st.error(f"""
+            ### ⚠️ 音声が長すぎます
+
+            **音声時間**: {actual_duration:.1f}秒
+            **制限**: {max_duration}秒（D-ID API制限）
+            **超過**: {actual_duration - max_duration:.1f}秒
+
+            **対処方法**:
+            スクリプトを2つに分けて、それぞれ別の動画として生成してください。
+
+            例:
+            - 前半: {len(script)//2}文字
+            - 後半: {len(script)//2}文字
+            """)
+            return
 
         # ステップ2: 動画生成
         status_text.text("🎬 動画生成中（3-5分かかります）...")
