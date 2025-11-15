@@ -1,0 +1,81 @@
+# AIアバター動画生成システム - 設定ファイル
+
+# アプリケーション設定
+app:
+  name: "AIアバター動画生成"
+  version: "1.0.0"
+  description: "ブログ記事をYouTube向けAIアバター動画に自動変換"
+
+# スクリプト設定
+script:
+  # 最大単語数
+  max_words_shorts: 150      # Shorts (60秒)
+  max_words_long: 500        # 5分動画
+  min_words: 10              # 最小単語数
+
+  # 予想音声時間計算
+  words_per_minute: 150      # 1分あたりの単語数
+
+# 音声生成設定 (Cartesia)
+cartesia:
+  # WebSocket URL
+  ws_url: "wss://api.cartesia.ai/tts/websocket"
+
+  # モデル設定
+  model: "sonic-japanese"
+
+  # 音声フォーマット
+  output_format:
+    container: "mp3"
+    encoding: "mp3"
+    sample_rate: 44100
+
+  # デフォルト設定
+  default_speed: 1.0
+  min_speed: 0.5
+  max_speed: 2.0
+
+  # タイムアウト
+  timeout_seconds: 60
+
+# 動画生成設定 (D-ID)
+did:
+  # API URL
+  api_url: "https://api.d-id.com"
+
+  # ポーリング設定
+  poll_interval_seconds: 5
+  poll_timeout_seconds: 300  # 5分
+
+  # 動画設定
+  config:
+    stitch: true
+    result_format: "mp4"
+
+# Cloudinary設定
+cloudinary:
+  # フォルダ
+  folder: "ai-avatar/audio"
+
+  # リソースタイプ（音声も"video"）
+  resource_type: "video"
+
+  # アップロード設定
+  overwrite: true
+
+# ロギング設定
+logging:
+  level: "INFO"              # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# リトライ設定
+retry:
+  max_retries: 3
+  initial_delay: 1.0         # 初期遅延（秒）
+  backoff_factor: 2.0        # バックオフ係数
+
+# タイムアウト設定
+timeout:
+  default: 30                # デフォルトタイムアウト（秒）
+  cartesia: 60               # Cartesia WebSocket
+  did: 300                   # D-ID ポーリング

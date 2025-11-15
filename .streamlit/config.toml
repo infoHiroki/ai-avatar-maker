@@ -1,0 +1,31 @@
+# Streamlit設定ファイル
+
+[theme]
+# プライマリカラー
+primaryColor = "#1f77b4"
+
+# 背景色
+backgroundColor = "#ffffff"
+
+# セカンダリ背景色
+secondaryBackgroundColor = "#f0f2f6"
+
+# テキストカラー
+textColor = "#262730"
+
+# フォント
+font = "sans serif"
+
+[server]
+# ポート
+port = 8501
+
+# ヘッドレスモード
+headless = true
+
+# ファイルウォッチャー
+runOnSave = true
+
+# CORS設定
+enableCORS = false
+enableXsrfProtection = true

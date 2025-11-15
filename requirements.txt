@@ -1,0 +1,26 @@
+# AIアバター動画生成システム - 依存関係
+# Python 3.9+
+
+# Web UI
+streamlit>=1.28.0
+
+# HTTP API
+requests>=2.31.0
+
+# WebSocket (Cartesia)
+websockets>=12.0
+
+# データバリデーション
+pydantic>=2.5.0
+
+# 設定管理
+pyyaml>=6.0.1
+
+# 音声ホスティング
+cloudinary>=1.36.0
+
+# 環境変数管理
+python-dotenv>=1.0.0
+
+# 非同期処理
+aiohttp>=3.9.0
