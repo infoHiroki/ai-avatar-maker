@@ -16,12 +16,14 @@ import json
 import base64
 import tempfile
 import os
+import wave
+import struct
 from typing import Tuple, Optional
 from pathlib import Path
 
 import cloudinary
 import cloudinary.uploader
-from mutagen.mp3 import MP3
+from mutagen import File as MutagenFile
 
 from ..models.schemas import GeneratedAudio, CartesiaConfig, CloudinaryConfig
 from ..utils.errors import AudioGenerationError, CloudinaryError, TimeoutError
@@ -115,8 +117,8 @@ class CartesiaClient:
                         "id": self.voice_id
                     },
                     "output_format": {
-                        "container": "mp3",
-                        "encoding": "mp3",
+                        "container": "raw",
+                        "encoding": "pcm_f32le",
                         "sample_rate": 44100
                     },
                     "language": "ja"
@@ -177,14 +179,19 @@ class CartesiaClient:
 
             logger.info(f"音声データ生成完了: {len(audio_bytes)}バイト")
 
-            # 一時ファイルに保存
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_file:
-                tmp_file.write(audio_bytes)
-                tmp_path = tmp_file.name
+            # Raw PCM (pcm_f32le) を WAV ファイルに変換して保存
+            tmp_path = tempfile.mktemp(suffix=".wav")
+
+            # WAVファイル作成
+            with wave.open(tmp_path, 'wb') as wav_file:
+                wav_file.setnchannels(1)  # モノラル
+                wav_file.setsampwidth(4)  # 32-bit float = 4 bytes
+                wav_file.setframerate(44100)
+                wav_file.writeframes(audio_bytes)
 
             try:
                 # mutagenで実際の音声時間を測定
-                audio_file = MP3(tmp_path)
+                audio_file = MutagenFile(tmp_path)
                 actual_duration = audio_file.info.length
                 logger.info(f"音声時間（実測）: {actual_duration:.2f}秒")
 
