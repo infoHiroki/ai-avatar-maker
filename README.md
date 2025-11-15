@@ -16,6 +16,7 @@ AIアバター/
 ├── resources/                    # 参考資料・比較
 │   ├── Cartesia実装ガイド.md ⭐⭐⭐⭐⭐実装版（最優先）
 │   ├── ElevenLabs_vs_Cartesia比較.md ⭐⭐⭐⭐⭐比較版
+│   ├── YouTube_API統合_実装可能性調査.md ⭐NEW
 │   ├── 声のクローニング実装ガイド.md（ElevenLabs版）
 │   ├── 技術選定ガイド_API版.md
 │   ├── AIアバター技術比較.md
@@ -153,6 +154,15 @@ AIアバター/
 - YouTube特有の要件
 - SEO対策
 - エンゲージメント向上策
+
+### YouTube API統合 ⭐NEW
+- **[YouTube API統合 実装可能性調査](resources/YouTube_API統合_実装可能性調査.md)** ⭐⭐⭐⭐⭐
+- Streamlit CloudからのYouTube自動投稿の実現可能性
+- OAuth 2.0認証の実装難易度評価
+- **結論: Zapier/Make.comが最適** ⭐推奨
+- 3つの代替アプローチの比較
+- 完全な実装コード例（参考）
+- トラブルシューティングガイド
 
 ### 自動化
 - [n8nワークフロー](workflows/n8n.md)
