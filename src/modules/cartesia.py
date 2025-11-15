@@ -228,13 +228,14 @@ class CartesiaClient:
         try:
             logger.info("Cloudinaryにアップロード開始")
 
-            # アップロード
+            # アップロード（MP3形式に変換）
             result = cloudinary.uploader.upload(
                 audio_file_path,
                 resource_type="video",  # 音声も"video"
                 folder="ai-avatar/audio",
                 overwrite=True,
-                unique_filename=True
+                unique_filename=True,
+                format="mp3"  # WAVをMP3に自動変換
             )
 
             url = result.get("secure_url")
