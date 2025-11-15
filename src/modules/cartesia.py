@@ -102,10 +102,10 @@ class CartesiaClient:
         try:
             logger.info(f"音声生成開始: {len(text)}文字")
 
-            # WebSocket接続
+            # WebSocket接続（Python 3.13対応）
             uri = f"{self.ws_url}?api_key={self.api_key}&cartesia_version=2024-06-10"
 
-            async with websockets.connect(uri, timeout=self.timeout) as websocket:
+            async with websockets.connect(uri) as websocket:
                 # 初期化メッセージ送信
                 init_message = {
                     "context_id": "temp",
