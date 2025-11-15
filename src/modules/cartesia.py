@@ -108,10 +108,11 @@ class CartesiaClient:
             uri = f"{self.ws_url}?api_key={self.api_key}&cartesia_version=2024-06-10"
 
             async with websockets.connect(uri) as websocket:
-                # 初期化メッセージ送信
-                init_message = {
+                # 単一メッセージで全パラメータを送信（最新API仕様）
+                message = {
                     "context_id": "temp",
                     "model_id": self.model,
+                    "transcript": text,
                     "voice": {
                         "mode": "id",
                         "id": self.voice_id
@@ -121,27 +122,15 @@ class CartesiaClient:
                         "encoding": "pcm_f32le",
                         "sample_rate": 44100
                     },
-                    "language": "ja"
-                }
-
-                await websocket.send(json.dumps(init_message))
-                logger.debug("初期化メッセージ送信完了")
-
-                # テキスト送信
-                text_message = {
-                    "context_id": "temp",
-                    "transcript": text,
+                    "language": "ja",
                     "continue": False,
-                    "duration": None,
-                    "voice": {
-                        "mode": "id",
-                        "id": self.voice_id
-                    },
-                    "speed": speed
+                    "_experimental_voice_controls": {
+                        "speed": speed
+                    }
                 }
 
-                await websocket.send(json.dumps(text_message))
-                logger.debug("テキスト送信完了")
+                await websocket.send(json.dumps(message))
+                logger.debug("メッセージ送信完了")
 
                 # 音声データ受信
                 audio_chunks = []
