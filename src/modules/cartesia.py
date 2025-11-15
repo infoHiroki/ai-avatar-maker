@@ -235,7 +235,9 @@ class CartesiaClient:
                 folder="ai-avatar/audio",
                 overwrite=True,
                 unique_filename=True,
-                format="mp3"  # WAVをMP3に自動変換
+                format="mp3",  # WAVをMP3に自動変換
+                eager=[{"format": "mp3"}],  # 変換を強制実行
+                eager_async=False  # 変換完了まで待機
             )
 
             url = result.get("secure_url")
