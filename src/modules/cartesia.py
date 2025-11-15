@@ -70,7 +70,7 @@ class CartesiaClient:
         # 設定読み込み
         config = get_config()
         self.ws_url = config.get("cartesia.ws_url")
-        self.model = config.get("cartesia.model", "sonic-japanese")
+        self.model = config.get("cartesia.model", "sonic-multilingual")
         self.timeout = config.get("cartesia.timeout_seconds", 60)
 
         # Cloudinary設定
