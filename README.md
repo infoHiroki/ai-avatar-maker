@@ -1,210 +1,377 @@
-# AIアバター YouTube動画制作システム
+# AIアバター動画生成システム - 実装版
 
-YouTube向けAIアバター動画制作の完全ガイド
+スクリプトからAIアバター動画を自動生成する Streamlit アプリケーション
+
+---
+
+## 📋 概要
+
+このアプリケーションは、テキストスクリプトから音声とリップシンク動画を生成します。
+
+**主な機能**:
+- ✅ スクリプトから音声生成（Cartesia API）
+- ✅ 音声からリップシンク動画生成（D-ID API）
+- ✅ リアルタイム進捗表示
+- ✅ 動画プレビュー＆ダウンロード
+- ✅ ブラウザ完結（Streamlit UI）
+
+**コスト**:
+- 週2本 × 60秒Shorts: **¥1,800/月**
+- 週2本 × 5分動画: **¥8,000/月**
+
+---
+
+## 🚀 クイックスタート
+
+### 前提条件
+
+- Python 3.9以上
+- 各種APIキー（下記参照）
+
+### 1. インストール
+
+```bash
+# リポジトリをクローン（既にある場合はスキップ）
+cd C:\dev\AIアバター
+
+# 仮想環境作成
+python -m venv venv
+
+# 仮想環境を有効化
+# Windows:
+venv\Scripts\activate
+# Mac/Linux:
+source venv/bin/activate
+
+# 依存関係インストール
+pip install -r requirements.txt
+```
+
+### 2. APIキーの設定
+
+`.streamlit/secrets.toml` を作成:
+
+```bash
+# サンプルをコピー
+copy .streamlit\secrets.toml.example .streamlit\secrets.toml
+```
+
+`secrets.toml` を編集して各APIキーを設定:
+
+```toml
+[cartesia]
+api_key = "your-cartesia-api-key"
+voice_id = "your-voice-id"
+
+[did]
+api_key = "your-did-api-key"
+
+[cloudinary]
+cloud_name = "your-cloud-name"
+api_key = "your-api-key"
+api_secret = "your-api-secret"
+```
+
+#### APIキーの取得方法
+
+1. **Cartesia** (https://cartesia.ai/)
+   - アカウント作成
+   - Pro プラン登録（$5/月）
+   - 音声クローン作成（5秒のサンプル）
+   - APIキーと Voice ID をコピー
+
+2. **D-ID** (https://studio.d-id.com/)
+   - アカウント作成
+   - Lite プラン登録（$5.9/月 - Shorts）または Pro（$49/月 - 5分動画）
+   - APIキーをコピー
+
+3. **Cloudinary** (https://cloudinary.com/)
+   - アカウント作成（無料枠で十分）
+   - Dashboard から cloud_name、api_key、api_secret をコピー
+
+### 3. アプリケーション起動
+
+```bash
+streamlit run app.py
+```
+
+ブラウザで http://localhost:8501 にアクセス
 
 ---
 
 ## 📁 ディレクトリ構造
 
 ```
-AIアバター/
-├── README.md                     # このファイル
-├── plans/                        # 実装プラン（即実行可能）
-│   ├── プラン1_D-ID即スタート.md
-│   ├── プラン2_オープンソース実装.md
-│   └── プラン3_ハイブリッド.md
-├── resources/                    # 参考資料・比較
-│   ├── Cartesia実装ガイド.md ⭐⭐⭐⭐⭐実装版（最優先）
-│   ├── ElevenLabs_vs_Cartesia比較.md ⭐⭐⭐⭐⭐比較版
-│   ├── YouTube_API統合_実装可能性調査.md ⭐NEW
-│   ├── 声のクローニング実装ガイド.md（ElevenLabs版）
-│   ├── 技術選定ガイド_API版.md
-│   ├── AIアバター技術比較.md
-│   ├── YouTube向けAIアバター実装プラン.md
-│   └── 現実的なスタートプラン.md
-├── workflows/                    # 自動化ワークフロー
-│   ├── n8n.md
-│   └── ブログ記事からYouTube動画への変換フロー.md
-├── guides/                       # その他のガイド
-│   └── Difyを使ったAIチャットボット作成ガイド.md
-└── doc/                          # 既存ドキュメント（アーカイブ）
-    ├── AIアバター動画制作_完全ガイド.md
-    ├── クライアント提案資料.md
-    └── archive/                  # 調査段階の資料
+C:\dev\AIアバター/
+├── app.py                        # Streamlitアプリ（メイン）
+├── config.yaml                   # 設定ファイル
+├── requirements.txt              # 依存関係
+├── requirements-dev.txt          # 開発用依存関係
+│
+├── src/                          # ソースコード
+│   ├── modules/                  # ビジネスロジック
+│   │   ├── validator.py         # スクリプト検証
+│   │   ├── cartesia.py          # 音声生成
+│   │   └── did.py               # 動画生成
+│   ├── utils/                    # ユーティリティ
+│   │   ├── logger.py            # ロギング
+│   │   ├── config.py            # 設定管理
+│   │   └── errors.py            # エラー定義
+│   └── models/                   # データモデル
+│       └── schemas.py           # Pydanticモデル
+│
+├── .streamlit/                   # Streamlit設定
+│   ├── config.toml              # UI設定
+│   └── secrets.toml.example     # APIキーテンプレート
+│
+├── design/                       # 設計ドキュメント（7ファイル）
+└── resources/                    # 参考資料
+    ├── Cartesia実装ガイド.md
+    └── YouTube_API統合_実装可能性調査.md
 ```
 
 ---
 
-## 🚀 クイックスタート
+## 💻 使い方
 
-### ⭐ 実装決定: Cartesiaで進めます
+### 基本フロー
 
-**[Cartesia実装ガイド（完全版）](resources/Cartesia実装ガイド.md)** ⭐⭐⭐⭐⭐最優先
-- **Cartesiaで実装決定、これを参照して実装開始**
-- わずか5秒の音声サンプルで即スタート
-- 完全なPython実装例付き
-- D-ID統合コード
-- 年間¥30,000のコスト削減
-- トラブルシューティング完備
+1. **スクリプト入力**
+   - テキストエリアにスクリプトを入力
+   - リアルタイムで文字数・予想時間を表示
 
-**[ElevenLabs vs Cartesia 完全比較](resources/ElevenLabs_vs_Cartesia比較.md)**（参考）
-- 選定の判断根拠
-- 詳細な品質・コスト比較
-- ElevenLabsへの移行方法（品質不十分な場合）
+2. **設定**
+   - 動画の長さ選択（60秒 or 5分）
+   - 声の速度調整（0.5x - 2.0x）
 
-### 次に読むべき3つのドキュメント
+3. **動画生成開始**
+   - ボタンクリックで生成開始
+   - 進捗バーでリアルタイム表示
 
-1. **[現実的なスタートプラン](resources/現実的なスタートプラン.md)**
-   - 無料枠の問題と解決策
-   - 3つのアプローチの比較
-   - 推奨する開始方法
+4. **プレビュー＆ダウンロード**
+   - 音声・動画をプレビュー
+   - ダウンロードして YouTube にアップロード
 
-2. **あなたに合ったプランを選ぶ**
-   - [プラン1: D-ID即スタート](plans/プラン1_D-ID即スタート.md) - 最速・低リスク
-   - [プラン2: オープンソース実装](plans/プラン2_オープンソース実装.md) - コスト最小
-   - [プラン3: ハイブリッド](plans/プラン3_ハイブリッド.md) - バランス型
+### YouTube投稿
 
-3. **[ブログ記事からYouTube動画への変換フロー](workflows/ブログ記事からYouTube動画への変換フロー.md)**
-   - 既存ブログ記事の活用方法
-   - ChatGPTでの変換プロンプト
-   - 完全自動化の実装
+**手動アップロード**（推奨）:
+1. アプリで動画をダウンロード
+2. YouTube Studio で手動アップロード
+
+**自動化オプション**:
+- Zapier/Make.com を使った自動投稿
+- 詳細: `resources/YouTube_API統合_実装可能性調査.md`
 
 ---
 
-## 🎯 プラン選択ガイド
+## ⚙️ 設定
 
-### あなたはどのタイプ？
+### config.yaml
 
-#### とにかく早く始めたい
-→ **[プラン1: D-ID即スタート](plans/プラン1_D-ID即スタート.md)**
-- 開始: 30分
-- 月額: ¥850-10,000
-- 技術スキル: 不要
+アプリケーション全体の設定:
 
-#### コストを最小化したい
-→ **[プラン2: オープンソース実装](plans/プラン2_オープンソース実装.md)**
-- 開始: 2-3日
-- 月額: ¥2,000-5,000
-- 技術スキル: 中級
+```yaml
+script:
+  max_words_shorts: 150      # Shorts最大文字数
+  max_words_long: 500        # 5分動画最大文字数
 
-#### バランス重視・段階的に成長
-→ **[プラン3: ハイブリッド](plans/プラン3_ハイブリッド.md)** ⭐推奨
-- 開始: 1週間
-- 月額: ¥7,000-15,000
-- 技術スキル: 初級-中級
+cartesia:
+  ws_url: "wss://..."        # WebSocket URL
+  model: "sonic-japanese"    # モデル名
 
----
+did:
+  api_url: "https://..."     # API URL
+  poll_interval_seconds: 5   # ポーリング間隔
+```
 
-## 📊 コスト比較（2025年11月15日更新）
+### ログレベル変更
 
-### 週2本 × 5分動画の場合
+`config.yaml` の `logging.level` を変更:
 
-| 構成 | 初期投資 | 月額コスト | 品質 | 難易度 |
-|------|---------|-----------|------|--------|
-| **Cartesia + D-ID** ⭐推奨 | ¥0 | ¥8,000 | ⭐⭐⭐⭐ | ★★☆☆☆ |
-| **ElevenLabs + D-ID** | ¥0 | ¥10,000 | ⭐⭐⭐⭐⭐ | ★☆☆☆☆ |
-| **オープンソース** | ¥100,000-150,000 | ¥2,000-5,000 | ⭐⭐⭐⭐ | ★★★★☆ |
-
-### 週2本 × 60秒Shorts（推奨開始パターン）
-
-| 構成 | 月額コスト | 年間削減額 |
-|------|-----------|-----------|
-| **Cartesia + D-ID Lite** ⭐⭐⭐⭐⭐ | ¥1,800 | ¥26,000 |
-| **ElevenLabs + D-ID Lite** | ¥4,300 | - |
+```yaml
+logging:
+  level: "DEBUG"  # DEBUG, INFO, WARNING, ERROR
+```
 
 ---
 
-## 💼 ユースケース
+## 🐛 トラブルシューティング
 
-### 既存ブログからYouTube展開
-1. [ブログ記事からYouTube動画への変換フロー](workflows/ブログ記事からYouTube動画への変換フロー.md)を読む
-2. ChatGPTでスクリプト変換（プロンプト付き）
-3. D-IDまたはWav2Lipで動画生成
-4. n8nで自動化（オプション）
+### 音声生成エラー
 
-### チャットボット型AIアバター
-- [Difyを使ったAIチャットボット作成ガイド](guides/Difyを使ったAIチャットボット作成ガイド.md)
-- ノーコードで対話型AI構築
-- 実際の選挙で使用された「AIあんの」の実装例
+**症状**: "WebSocket接続エラー"
+
+**対処**:
+1. Cartesia APIキーを確認
+2. Voice ID を確認
+3. ネットワーク接続を確認
+
+### 動画生成タイムアウト
+
+**症状**: "動画生成タイムアウト（5分）"
+
+**対処**:
+1. D-ID のステータスページを確認
+2. しばらく待ってから再試行
+3. `config.yaml` の `poll_timeout_seconds` を増やす
+
+### Cloudinaryアップロードエラー
+
+**症状**: "アップロード失敗"
+
+**対処**:
+1. Cloudinary認証情報を確認
+2. 無料枠の容量を確認（25GB）
 
 ---
 
-## 🔧 技術スタック比較
+## 🚢 デプロイ（Streamlit Cloud）
 
-詳細は [AIアバター技術比較](resources/AIアバター技術比較.md) を参照
+### 1. GitHubリポジトリ作成
 
-### 商用サービス
-- **HeyGen**: 高品質、カスタムアバター容易
-- **Synthesia**: 企業向け、長尺動画対応
-- **D-ID**: 低価格、静止画から作成可能
-- **Captions.ai**: SNS特化、モバイルアプリ
+```bash
+# Git初期化
+git init
+git add .
+git commit -m "feat: 初回コミット
 
-### オープンソース
-- **Wav2Lip**: リップシンク生成
-- **SadTalker**: より自然な表情
-- **Coqui TTS**: 音声合成（無料）
-- **OpenAI TTS**: 音声合成（API）
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+# GitHubリポジトリ作成（Private推奨）
+gh repo create ai-avatar-app --private
+git remote add origin https://github.com/your-username/ai-avatar-app.git
+git push -u origin main
+```
+
+### 2. Streamlit Cloud設定
+
+1. https://share.streamlit.io/ にアクセス
+2. GitHubでサインイン
+3. "New app" をクリック
+4. リポジトリ選択
+5. Main file path: `app.py`
+6. "Deploy" をクリック
+
+### 3. Secrets設定
+
+Streamlit Cloud Dashboard:
+- App settings → Secrets
+- `secrets.toml` の内容をコピー＆ペースト
+
+---
+
+## 📊 コスト試算
+
+### Shorts（60秒）週2本
+
+```
+Cartesia Pro: $5/月
+D-ID Lite: $5.9/月
+Cloudinary: 無料
+
+合計: $10.9/月（¥1,600）
+```
+
+### 5分動画 週2本
+
+```
+Cartesia Pro: $5/月
+D-ID Pro: $49/月
+Cloudinary: 無料
+
+合計: $54/月（¥7,800）
+```
+
+---
+
+## 🧪 テスト
+
+### ユニットテスト実行
+
+```bash
+# すべてのテスト
+pytest
+
+# カバレッジ付き
+pytest --cov=src --cov-report=html
+```
+
+### コード品質チェック
+
+```bash
+# フォーマット
+black src/
+
+# Lint
+flake8 src/
+
+# 型チェック
+mypy src/
+```
 
 ---
 
 ## 📚 参考ドキュメント
 
-### YouTube最適化
-- [YouTube向けAIアバター実装プラン](resources/YouTube向けAIアバター実装プラン.md)
-- YouTube特有の要件
-- SEO対策
-- エンゲージメント向上策
+### 設計書（design/）
 
-### YouTube API統合 ⭐NEW
-- **[YouTube API統合 実装可能性調査](resources/YouTube_API統合_実装可能性調査.md)** ⭐⭐⭐⭐⭐
-- Streamlit CloudからのYouTube自動投稿の実現可能性
-- OAuth 2.0認証の実装難易度評価
-- **結論: Zapier/Make.comが最適** ⭐推奨
-- 3つの代替アプローチの比較
-- 完全な実装コード例（参考）
-- トラブルシューティングガイド
+1. `01_システム設計書.md` - アーキテクチャ全体像
+2. `02_モジュール詳細設計.md` - コーディング規約・モジュール仕様
+3. `03_API統合設計.md` - 各API の詳細仕様
+4. `04_UI-UX設計書.md` - Streamlit UIの設計
+5. `05_セキュリティ設計書.md` - セキュリティ対策
+6. `06_デプロイ運用設計書.md` - デプロイ手順
+7. `07_テスト計画書.md` - テスト戦略
 
-### 自動化
-- [n8nワークフロー](workflows/n8n.md)
-- バイラル動画の自動生成・投稿
-- 9つのSNSへの同時投稿
+### 実装ガイド（resources/）
+
+- `Cartesia実装ガイド.md` - Cartesia詳細実装
+- `YouTube_API統合_実装可能性調査.md` - YouTube投稿の実装可能性
 
 ---
 
-## 🎬 今日から始める
+## 🤝 貢献
 
-### ステップ1: プラン選択（5分）
-上記のプラン選択ガイドから1つ選ぶ
+プルリクエスト歓迎！
 
-### ステップ2: プラン実行（30分-3日）
-選んだプランのドキュメントに従って実装
-
-### ステップ3: 最初の動画作成
-- ブログ記事を1つ選ぶ
-- スクリプトに変換
-- AIアバター動画生成
-- YouTube投稿
+1. Fork
+2. Feature ブランチ作成
+3. Commit（コミットメッセージは日本語OK）
+4. Push
+5. Pull Request
 
 ---
 
-## 📞 サポート
+## 📝 ライセンス
 
-質問や問題がある場合:
-1. 各ドキュメント内の「よくあるトラブル」セクションを確認
-2. 関連ドキュメントを参照
-3. コミュニティに質問
+MIT License
 
 ---
 
-## 📝 更新履歴
+## 🎯 次のステップ
 
-- 2025-11: プラン1-3を追加、ディレクトリ構造を整理
-- 2025-06: n8nワークフロー追加
-- 初版: 調査・技術比較
+### Phase 1（現在）: MVP完成 ✅
+
+- ✅ スクリプト入力
+- ✅ 音声生成（Cartesia）
+- ✅ 動画生成（D-ID）
+- ✅ ダウンロード
+
+### Phase 2: 機能追加
+
+- ⬜ アバター画像アップロード
+- ⬜ 複数アバター選択
+- ⬜ バッチ処理（複数動画）
+
+### Phase 3: 自動化
+
+- ⬜ Zapier統合（YouTube自動投稿）
+- ⬜ ブログRSS監視
+- ⬜ スケジュール投稿
 
 ---
 
-**おすすめの進め方**:
-1. [現実的なスタートプラン](resources/現実的なスタートプラン.md) で全体を把握
-2. [プラン3: ハイブリッド](plans/プラン3_ハイブリッド.md) で開始（推奨）
-3. [ブログ記事からYouTube動画への変換フロー](workflows/ブログ記事からYouTube動画への変換フロー.md) で自動化
+**最終更新**: 2025年11月15日
+**バージョン**: 1.0.0 (MVP)
