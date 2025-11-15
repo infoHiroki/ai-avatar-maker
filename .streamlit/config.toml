@@ -1,17 +1,20 @@
 # Streamlit設定ファイル
 
 [theme]
-# プライマリカラー
-primaryColor = "#1f77b4"
+# ダークモード設定
+base = "dark"
 
-# 背景色
-backgroundColor = "#ffffff"
+# プライマリカラー（アクセントカラー）
+primaryColor = "#FF4B4B"
 
-# セカンダリ背景色
-secondaryBackgroundColor = "#f0f2f6"
+# 背景色（メイン）
+backgroundColor = "#0E1117"
+
+# セカンダリ背景色（カード等）
+secondaryBackgroundColor = "#262730"
 
 # テキストカラー
-textColor = "#262730"
+textColor = "#FAFAFA"
 
 # フォント
 font = "sans serif"
