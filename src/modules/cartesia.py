@@ -119,7 +119,7 @@ class CartesiaClient:
                     },
                     "output_format": {
                         "container": "raw",
-                        "encoding": "pcm_f32le",
+                        "encoding": "pcm_s16le",
                         "sample_rate": 44100
                     },
                     "language": "ja",
@@ -168,13 +168,13 @@ class CartesiaClient:
 
             logger.info(f"音声データ生成完了: {len(audio_bytes)}バイト")
 
-            # Raw PCM (pcm_f32le) を WAV ファイルに変換して保存
+            # Raw PCM (pcm_s16le) を WAV ファイルに変換して保存
             tmp_path = tempfile.mktemp(suffix=".wav")
 
             # WAVファイル作成
             with wave.open(tmp_path, 'wb') as wav_file:
                 wav_file.setnchannels(1)  # モノラル
-                wav_file.setsampwidth(4)  # 32-bit float = 4 bytes
+                wav_file.setsampwidth(2)  # 16-bit signed int = 2 bytes
                 wav_file.setframerate(44100)
                 wav_file.writeframes(audio_bytes)
 
