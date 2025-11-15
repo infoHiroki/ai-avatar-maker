@@ -21,7 +21,7 @@ from pathlib import Path
 
 import cloudinary
 import cloudinary.uploader
-from pydub import AudioSegment
+from mutagen.mp3 import MP3
 
 from ..models.schemas import GeneratedAudio, CartesiaConfig, CloudinaryConfig
 from ..utils.errors import AudioGenerationError, CloudinaryError, TimeoutError
@@ -183,9 +183,9 @@ class CartesiaClient:
                 tmp_path = tmp_file.name
 
             try:
-                # pydubで実際の音声時間を測定
-                audio_segment = AudioSegment.from_file(tmp_path)
-                actual_duration = audio_segment.duration_seconds
+                # mutagenで実際の音声時間を測定
+                audio_file = MP3(tmp_path)
+                actual_duration = audio_file.info.length
                 logger.info(f"音声時間（実測）: {actual_duration:.2f}秒")
 
                 # Cloudinaryにアップロード
@@ -196,7 +196,7 @@ class CartesiaClient:
                 # GeneratedAudioオブジェクト作成
                 audio = GeneratedAudio(
                     audio_url=audio_url,
-                    duration_seconds=actual_duration,  # pydubで実測した値
+                    duration_seconds=actual_duration,  # mutagenで実測した値
                     file_size_bytes=len(audio_bytes)
                 )
 
