@@ -60,3 +60,10 @@ htmlcov/
 *.tmp
 tmp/
 temp/
+
+# 音声・動画ファイル
+*.wav
+*.mp3
+*.mp4
+*.avi
+*.mov
