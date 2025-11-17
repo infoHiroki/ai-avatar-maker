@@ -21,6 +21,7 @@ from src.modules import validator, cartesia, did
 from src.utils.logger import get_logger, setup_logger
 from src.utils.config import load_config
 from src.utils.errors import ValidationError
+from src.utils.script_optimizer import optimize_for_cartesia, compare_versions
 
 # ロガー設定
 setup_logger("INFO")
@@ -260,7 +261,8 @@ def render_generating_screen():
 
         # アバター画像URL（仮）
         # TODO: ユーザーがアップロードできるようにする
-        avatar_url = "https://create-images-results.d-id.com/DefaultPresenters/Noelle_f/image.jpeg"
+        # Note: DefaultPresentersのURLは500エラーを返すため、D-IDのパブリックサンプルを使用
+        avatar_url = "https://d-id-public-bucket.s3.amazonaws.com/alice.jpg"
 
         did_client = did.DIDClient(api_key=did_api_key)
 
